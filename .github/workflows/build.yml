@@ -1,0 +1,33 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 当推送形如 v1.0.0 的标签时触发
+
+jobs:
+  release:
+    runs-on: windows-latest # 如果需要打包 Windows 程序，建议使用 windows-latest
+
+    permissions:
+      contents: write # 授予写入 Release 的权限
+
+    steps:
+      # 1. 检出仓库代码
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # 2. 使用 Marketplace 上的 PyInstaller Action 自动打包
+      - name: Run PyInstaller Action
+        uses: UnmeshGurjar/pyinstaller-action@v2
+        with:
+          spec: 'main.py'                      # 你的主程序入口文件
+          requirements: 'requirements.txt'     # 自动安装的依赖文件
+          python_ver: '3.13'                   # 指定 Python 版本
+
+      # 3. 自动发布 Release 并上传打包好的 exe 文件
+      - name: Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.exe
