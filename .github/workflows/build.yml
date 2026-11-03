@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.13.5'
 
       # 2. 使用 Marketplace 上的 PyInstaller Action 自动打包
       - name: Run PyInstaller
