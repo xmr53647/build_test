@@ -22,7 +22,7 @@ jobs:
 
       # 2. 使用 Marketplace 上的 PyInstaller Action 自动打包
       - name: Run PyInstaller
-        run:
+        run: |
           pip install -r requirements.txt
           pyinstaller main.spec
 
