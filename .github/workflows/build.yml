@@ -20,15 +20,24 @@ jobs:
         with:
           python-version: '3.13.5'
 
-      # 2. 使用 Marketplace 上的 PyInstaller Action 自动打包
+      
       - name: Run PyInstaller
         run: |
           pip install -r requirements.txt
           pyinstaller main.spec
 
-      # 3. 自动发布 Release 并上传打包好的 exe 文件
+      - uses: actions/upload-artifact@v6
+        with:
+          name: build-bin-${{ runner.os }}
+          path: dist/*
+      - name: Download workflow artifact
+        uses: dawidd6/action-download-artifact@v28
+        with:
+          name: build-bin-${{ runner.os }}
+          path: opt
+          skip_unpack: true
       - name: Release and Upload Asset
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/*.exe
+            opt/*
