@@ -6,11 +6,8 @@ on:
       - 'v*' # 当推送形如 v1.0.0 的标签时触发
 
 jobs:
-  release:
+  build:
     runs-on: windows-latest # 如果需要打包 Windows 程序，建议使用 windows-latest
-
-    permissions:
-      contents: write # 授予写入 Release 的权限
 
     steps:
       # 1. 检出仓库代码
@@ -30,10 +27,15 @@ jobs:
         with:
           name: build-bin-${{ runner.os }}
           path: dist/*
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 授予写入 Release 的权限
+
+    steps:
       - name: Download workflow artifact
         uses: dawidd6/action-download-artifact@v28
         with:
-          name: build-bin-${{ runner.os }}
           path: opt
           skip_unpack: true
       - name: Release and Upload Asset
