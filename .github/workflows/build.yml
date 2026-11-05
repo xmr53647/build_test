@@ -7,39 +7,71 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # 如果需要打包 Windows 程序，建议使用 windows-latest
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: app-windows.zip
+            asset_name: myapp-windows-x64.zip
+          - os: ubuntu-latest
+            artifact_name: app-linux.zip
+            asset_name: myapp-linux-x64.zip
+          - os: macos-latest
+            artifact_name: app-macos.zip
+            asset_name: myapp-macos-x64.zip
 
     steps:
       # 1. 检出仓库代码
       - name: Checkout code
         uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+
+      # 2. 设置 Python 环境
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13.5'
 
-      
+      # 3. 安装依赖并运行 PyInstaller
       - name: Run PyInstaller
+        shell: pwsh
         run: |
           pip install -r requirements.txt
           pyinstaller main.spec
 
-      - uses: actions/upload-artifact@v6
-        with:
-          name: build-bin-${{ runner.os }}
-          path: dist/*
-  release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # 授予写入 Release 的权限
+      # 4. 压缩 dist 下的文件夹为 ZIP（跨平台使用 pwsh）
+      # 注意：这里会进入 dist 目录并打包里面的子文件夹，确保 ZIP 根目录是该子文件夹
+      - name: Archive artifacts
+        shell: pwsh
+        run: |
+          $distPath = Join-Path $PWD "dist"
+          Set-Location $distPath
+          
+          # 获取 dist 下的第一层子目录或文件作为根目录
+          $targetDir = Get-ChildItem -Path . | Select-Object -First 1
+          if ($null -eq $targetDir) {
+              Write-Error "dist 目录为空，未找到打包产物！"
+              exit 1
+          }
+          
+          $zipName = "${{ matrix.artifact_name }}"
+          $zipFullPath = Join-Path $PWD $zipName
+          
+          Write-Host "正在将 $($targetDir.Name) 打包为 $zipName ..."
+          Compress-Archive -Path "$($targetDir.Name)\*" -DestinationPath $zipFullPath -Force
+          
+          # 移动压缩包到上层目录以便上传
+          Move-Item -Path $zipFullPath -Destination "..\$zipName"
 
-    steps:
-      - name: Download workflow artifact
-        uses: dawidd6/action-download-artifact@v28
-        with:
-          path: opt
-          skip_unpack: true
-      - name: Release and Upload Asset
+      # 5. 上传 Release
+      - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            opt/*
+            ${{ matrix.artifact_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
