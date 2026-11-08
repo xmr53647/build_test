@@ -41,7 +41,7 @@ jobs:
         shell: pwsh
         run: |
           pip install -r requirements.txt
-          pyinstaller main.spec
+          pyinstaller MyApp.spec
 
       # 4. 压缩 dist 下的文件夹为 ZIP（跨平台使用 pwsh）
       # 注意：这里会进入 dist 目录并打包里面的子文件夹，确保 ZIP 根目录是该子文件夹
